@@ -82,7 +82,8 @@ async function createOrganization() {
             v-for="org in organizations.data"
             :key="org.id"
             class="bg-main-800 flex flex-col gap-2 max-h-40 p-4 ring-md rounded-lg hover:bg-main-700 cursor-pointer transition-all duration-75"
-            :to="{ name: 'dashboard-group-groupId', params: { groupId: org.id }  }">
+            :to="{ name: 'dashboard-group-groupId', params: { groupId: org.id }  }"
+            @click.native="$authClient.organization.setActive({ organizationId: org.id })">
             <span class="text-lg font-semibold">{{ org.name }}</span>
             <!-- <span class="capitalize">Role: <i>{{ org. }}</i></span> -->
         </NuxtLink>
