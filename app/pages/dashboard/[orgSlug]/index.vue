@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { type ClientInsertProjectSchema } from '~~/lib/db/schema';
 
+definePageMeta({
+    sidebarType: 'org',
+});
+
 const { $csrfFetch, $authClient } = useNuxtApp();
 
 const route = useRoute();
@@ -70,7 +74,7 @@ function selectedRepoChanged(value: string) {
         <span class="mt-4">Projects</span>
     </div>
     <div v-if="activeOrg.error || !activeOrg.data">
-        There was an error fetching group info.
+        There was an error fetching organization info.
     </div>
     <div v-else class="flex flex-col">
         <span>Selected organization:</span>
@@ -95,7 +99,7 @@ function selectedRepoChanged(value: string) {
             v-for="project in projects"
             :key="project.id"
             class="bg-main-800 flex flex-col gap-2 max-h-40 p-4 ring-md rounded-lg hover:bg-main-700 cursor-pointer transition-all duration-75"
-            :to="{ name: 'dashboard-group-orgSlug-project-projectId', params: { orgSlug, projectId: project.id }  }">
+            :to="{ name: 'dashboard-orgSlug-projectId', params: { orgSlug, projectId: project.id }  }">
             <span class="text-lg font-semibold">{{ project.title }}</span>
         </NuxtLink>
 

@@ -26,7 +26,19 @@ export const auth = betterAuth({
                 owner,
                 admin,
                 member,
-            }
+            },
+            organizationHooks: {
+                // Before an org is created
+                beforeCreateOrganization: async ({ organization }) => {
+                    // Prepend `org-` to the start of any org name
+                    return {
+                        data: {
+                            ...organization,
+                            slug: `org-${organization.slug}`,
+                        }
+                    }
+                }
+            },
         }),
     ],
 });

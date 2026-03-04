@@ -8,7 +8,7 @@ export default defineAuthenticatedEventHandler(async (event) => {
 
     await ensureUserInOrg(event, userId, orgId);
 
-    const groupProjects = await listProjects(orgId);
+    const orgProjects = await listProjects(orgId);
 
-    return groupProjects;
+    return orgProjects;
 });

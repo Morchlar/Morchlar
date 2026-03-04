@@ -9,7 +9,7 @@ const route = useRoute();
 const orgSlug = computed(() => route.params.orgSlug);
 const projectId = computed(() => route.params.projectId);
 
-const sidebarType = computed(() => route.meta.sidebarType ?? 'group');
+const sidebarType = computed(() => route.meta.sidebarType);
 
 </script>
 
@@ -36,7 +36,7 @@ const sidebarType = computed(() => route.meta.sidebarType ?? 'group');
             <ButtonSecondary
                 v-if="projectId"
                 class="inline-flex items-center gap-2"
-                :to="{ name: 'dashboard-group-orgSlug', params: { orgSlug } }">
+                :to="{ name: 'dashboard-orgSlug', params: { orgSlug } }">
                 <Icon name="hugeicons:arrow-left-01" />
                 Projects
             </ButtonSecondary>
@@ -44,7 +44,7 @@ const sidebarType = computed(() => route.meta.sidebarType ?? 'group');
         <div class="grow w-full flex flex-row">
             <aside class="w-xs bg-main-800 border-r border-main-50/10 p-2">
                 <UserSidebar v-if="sidebarType === 'user'" />
-                <OrgSidebar v-else-if="sidebarType === 'group'" />
+                <OrgSidebar v-else-if="sidebarType === 'org'" />
                 <ProjectSidebar v-else-if="sidebarType === 'project'" />
             </aside>
             <main class="grow w-full flex flex-col p-2">

@@ -1,4 +1,8 @@
 <script setup lang="ts">
+definePageMeta({
+    sidebarType: 'org',
+});
+
 const { $authClient } = useNuxtApp();
 
 const { data: orgMembers, error: orgMembersError } = await $authClient.organization.listMembers();
@@ -41,7 +45,7 @@ async function addUserToGroup() {
                 <option value="admin">Admin</option>
                 <!-- <option value="owner">Owner</option> -->
             </select>
-            <ButtonSecondary type="submit">Add members to group.</ButtonSecondary>
+            <ButtonSecondary type="submit">Add members to organizaation.</ButtonSecondary>
         </form>
         <div v-if="orgMembersError || !orgMembers">
             Error loading organization members: {{ orgMembersError?.message ?? 'Unknown error' }}

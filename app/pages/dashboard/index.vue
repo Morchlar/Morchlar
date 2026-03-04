@@ -16,28 +16,28 @@ async function signOut() {
 const organizations = $authClient.useListOrganizations();
 
 async function createOrganization() {
-    // async function promptValidSlug(): Promise<string | null> {
-    //     while (true) {
-    //         const slug = prompt("Enter org slug: ");
-    //         if (!slug) return null;
+    async function promptValidSlug(): Promise<string | null> {
+        while (true) {
+            const slug = prompt("Enter org slug: ");
+            if (!slug) return null;
 
-    //         const { data, error } = await $authClient.organization.checkSlug({ slug });
+            const { data, error } = await $authClient.organization.checkSlug({ slug });
 
-    //         if (error) {
-    //             alert("There was an error validating the slug. Please try again.");
-    //             continue;
-    //         }
+            if (error) {
+                alert("There was an error validating the slug. Please try again.");
+                continue;
+            }
 
-    //         if (data.status) return slug;
+            if (data.status) return slug;
 
-    //         alert("That slug is already taken. Please choose another.");
-    //     }
-    // }
+            alert("That slug is already taken. Please choose another.");
+        }
+    }
 
     const name = prompt("Enter organization name:");
     if (!name) return;
 
-    const slug = prompt("Enter org slug: ");
+    const slug = await promptValidSlug();
     if (!slug) return;
 
     const { data, error } = await $authClient.organization.create({ name, slug });
@@ -82,7 +82,7 @@ async function createOrganization() {
             v-for="org in organizations.data"
             :key="org.id"
             class="bg-main-800 flex flex-col gap-2 max-h-40 p-4 ring-md rounded-lg hover:bg-main-700 cursor-pointer transition-all duration-75"
-            :to="{ name: 'dashboard-group-orgSlug', params: { orgSlug: org.slug }  }"
+            :to="{ name: 'dashboard-orgSlug', params: { orgSlug: org.slug }  }"
             @click.native="$authClient.organization.setActive({ organizationId: org.id })">
             <span class="text-lg font-semibold">{{ org.name }}</span>
             <!-- <span class="capitalize">Role: <i>{{ org. }}</i></span> -->

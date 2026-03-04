@@ -1,11 +1,11 @@
 <script setup lang="ts">
 definePageMeta({
-    sidebarType: 'group',
+    sidebarType: 'org',
 });
 </script>
 
 <template>
     <div>
-        group settings page
+        org settings page
     </div>
 </template>
