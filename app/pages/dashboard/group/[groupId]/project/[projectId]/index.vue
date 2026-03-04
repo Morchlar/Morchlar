@@ -30,17 +30,15 @@ const items = computed<TimelineItem[]>(() => {
             group: `${task.id}-group`,
             type: 'range',
             start: new Date(task.startTime).getTime(),
-            end: new Date(task.endTime).getTime()
+            end: new Date(task.endTime).getTime(),
         }
     })
 });
 
 // Pusher
-const pusher = new Pusher("18764a9bbb57f153f5fa", {
+const pusher = new Pusher("e41e7620d6ab296d33aa", {
     cluster: 'eu'
 });
-
-Pusher.logToConsole = true;
 
 if(projectInfo.value) {
     var channel = pusher.subscribe("project"+projectInfo.value.id);
@@ -49,7 +47,7 @@ if(projectInfo.value) {
 
 async function updateChannel() {
     if(projectInfo.value) {
-        const result = useFetch(`./api/projects/update/`+projectInfo.value.id, {
+        const result = $csrfFetch(`/api/projects/update/`+projectInfo.value.id, {
             method: "GET",
         });
     }

@@ -1,9 +1,9 @@
 import Pusher from 'pusher';
 import env from './env';
-
+console.log(env.PUSHER_KEY+"Heye!!!");
 const pusher = new Pusher({
   appId: env.PUSHER_APP_ID,
-  key: "18764a9bbb57f153f5f",
+  key: "e41e7620d6ab296d33aa",
   secret: env.PUSHER_SECRET,
   cluster: "eu",
   useTLS: true

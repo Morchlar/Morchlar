@@ -2,10 +2,21 @@ import pusher from '~~/lib/pusher';
 import z from 'zod';
 
 export default defineAuthenticatedEventHandler(async (event) => {
-    const userId = event.context.user.id;
-    const projectId = validateRouterParam(event, 'projectId');
+    try {
+        const userId = event.context.user.id;
+        const projectId = validateRouterParam(event, 'projectId');
 
-    // ensureUserInGroup(userId, groupId);
+        await ensureUserCanAccessProject(userId, projectId);
+        console.log("hi!");
+        await pusher.trigger("project"+projectId, "update", {});
+        return "Hi!";
+    } catch(error: any) {
+        console.log(error?.body);
+        throw createError({
+            status: 500,
+            statusMessage: "An error has occured, "+error
+        });
+    }
+    
 
-    pusher.trigger("project"+projectId, "update", {});
 });
