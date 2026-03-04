@@ -6,7 +6,7 @@
 
 const route = useRoute();
 
-const groupId = computed(() => route.params.groupId);
+const orgSlug = computed(() => route.params.orgSlug);
 const projectId = computed(() => route.params.projectId);
 
 const sidebarType = computed(() => route.meta.sidebarType ?? 'group');
@@ -19,7 +19,7 @@ const sidebarType = computed(() => route.meta.sidebarType ?? 'group');
             class="flex flex-row gap-2 p-2
             bg-main-800 ring-1 ring-inset ring-main-50/10">
             <ButtonSecondary 
-                v-if="groupId"
+                v-if="orgSlug"
                 class="inline-flex items-center gap-2"
                 :to="{ name: 'dashboard' }">
                 <Icon name="hugeicons:arrow-left-01" />
@@ -36,7 +36,7 @@ const sidebarType = computed(() => route.meta.sidebarType ?? 'group');
             <ButtonSecondary
                 v-if="projectId"
                 class="inline-flex items-center gap-2"
-                :to="{ name: 'dashboard-group-groupId', params: { groupId } }">
+                :to="{ name: 'dashboard-group-orgSlug', params: { orgSlug } }">
                 <Icon name="hugeicons:arrow-left-01" />
                 Projects
             </ButtonSecondary>

@@ -5,11 +5,26 @@ const { $csrfFetch, $authClient } = useNuxtApp();
 
 const route = useRoute();
 // https://nuxt.com/docs/4.x/api/composables/use-fetch#reactive-keys-and-shared-state
-const groupId = computed(() => route.params.groupId);
+const orgSlug = computed(() => route.params.orgSlug);
 
 const activeOrg = $authClient.useActiveOrganization();
+const orgId = computed(() => activeOrg.value.data?.id);
 
-const { data: projects, pending: projectsPending, error: projectsError, refresh: refreshProjects } = useFetch(() => `/api/projects/${groupId.value}`, { method: 'GET' });
+const { 
+    data: projects,
+    pending: projectsPending,
+    error: projectsError,
+    refresh: refreshProjects,
+    execute: fetchProjects,
+} = useFetch(() => `/api/projects/${orgId.value}`, {
+    method: 'GET',
+    immediate: false,
+    watch: false,
+});
+
+watch(orgId, (id) => {
+    if (id) fetchProjects();
+}, { immediate: true });
 
 async function createProject() {
     if (title.value.length === 0) return;
@@ -80,7 +95,7 @@ function selectedRepoChanged(value: string) {
             v-for="project in projects"
             :key="project.id"
             class="bg-main-800 flex flex-col gap-2 max-h-40 p-4 ring-md rounded-lg hover:bg-main-700 cursor-pointer transition-all duration-75"
-            :to="{ name: 'dashboard-group-groupId-project-projectId', params: { groupId, projectId: project.id }  }">
+            :to="{ name: 'dashboard-group-orgSlug-project-projectId', params: { orgSlug, projectId: project.id }  }">
             <span class="text-lg font-semibold">{{ project.title }}</span>
         </NuxtLink>
 
