@@ -49,7 +49,7 @@ if(projectInfo.value) {
 
 async function updateChannel() {
     if(projectInfo.value) {
-        const result = useFetch(`./api/projects/update/`+projectInfo.value.id, {
+        const result = $fetch(`/api/projects/update/`+projectInfo.value.id, {
             method: "GET",
         });
     }
