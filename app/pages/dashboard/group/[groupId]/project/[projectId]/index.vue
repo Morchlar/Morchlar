@@ -48,6 +48,7 @@ if(projectInfo.value) {
 async function updateChannel() {
     if(projectInfo.value) {
         const result = $csrfFetch(`/api/projects/update/`+projectInfo.value.id, {
+
             method: "GET",
         });
     }
