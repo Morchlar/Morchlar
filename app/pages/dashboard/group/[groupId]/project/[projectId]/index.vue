@@ -240,6 +240,7 @@ async function modifyTask() {
   } else {
     alert("Failed to modify task");
   }
+  updateChannel();
 }
 
 function renderTask(
