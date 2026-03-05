@@ -1,7 +1,9 @@
 import { betterAuth } from "better-auth/minimal";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
-import * as schema from './db/schema';
+import { organization } from "better-auth/plugins";
 
+import { ac, owner, admin, member } from './auth-permissions';
+import * as schema from './db/schema';
 import db from "./db";
 import env from "./env";
 
@@ -17,16 +19,26 @@ export const auth = betterAuth({
             scope: [ 'user:email', 'repo' ]
         },
     },
-    user: {
-        additionalFields: {
-            selectedGroup: {
-                type: 'number',
-                required: false,
+    plugins: [
+        organization({
+            ac,
+            roles: {
+                owner,
+                admin,
+                member,
             },
-            selectedProject: {
-                type: 'number',
-                required: false,
+            organizationHooks: {
+                // Before an org is created
+                beforeCreateOrganization: async ({ organization }) => {
+                    // Prepend `org-` to the start of any org name
+                    return {
+                        data: {
+                            ...organization,
+                            slug: `org-${organization.slug}`,
+                        }
+                    }
+                }
             },
-        },
-    },
+        }),
+    ],
 });
