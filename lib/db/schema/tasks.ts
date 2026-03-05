@@ -80,8 +80,16 @@ export const ModifyTask = createUpdateSchema(tasks, {
     updatedAt: true,
   });
 
+export const DeleteTask = createUpdateSchema(tasks, {
+  id: () => z.number(),
+})
+  .required({ id: true })
+  .pick({ id: true });
+
 export type TasksSchema = typeof tasks.$inferSelect;
 
 export type InsertTaskSchema = z.infer<typeof InsertTask>;
 
 export type ModifyTaskSchema = z.infer<typeof ModifyTask>;
+
+export type DeleteTaskSchema = z.infer<typeof DeleteTask>;

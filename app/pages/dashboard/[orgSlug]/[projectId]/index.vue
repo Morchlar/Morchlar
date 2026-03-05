@@ -11,8 +11,9 @@ import {
   tasks,
   type InsertTaskSchema,
   type ModifyTaskSchema,
+  type DeleteTaskSchema,
 } from "~~/lib/db/schema";
-import Pusher from 'pusher-js';
+import Pusher from "pusher-js";
 import type { ApiResponse } from "~/composables/apiResponse";
 
 definePageMeta({
@@ -29,13 +30,13 @@ const {
   pending: projectInfoPending,
   error: projectInfoError,
 } = useFetch(() => `/api/project/${projectId.value}`, { method: "GET" });
-
+console.log(projectId.value);
 const {
   data: tasksInfo,
   pending: tasksPending,
   error: tasksError,
   refresh: taskRefresh,
-} = useFetch(() => `/api/tasks/${projectId.value}`, { method: "GET" });
+} = useFetch(() => `/api/task/${projectId.value}`, { method: "GET" });
 
 // maybe add controls later on
 // https://laurens94.github.io/vue-timeline-chart/examples/set-viewport.html#set-viewport-example
@@ -57,26 +58,25 @@ const items = computed<TimelineItemWithData[]>(() => {
 
 // Pusher
 const pusher = new Pusher("e41e7620d6ab296d33aa", {
-    cluster: 'eu'
+  cluster: "eu",
 });
 
 Pusher.logToConsole = true;
 
-if(projectInfo.value) {
-    var channel = pusher.subscribe("project"+projectInfo.value.id);
-    channel.bind("update", taskRefresh);
+if (projectInfo.value) {
+  var channel = pusher.subscribe("project" + projectInfo.value.id);
+  channel.bind("update", taskRefresh);
 }
 
 async function updateChannel() {
-    if(projectInfo.value) {
-        const result = $csrfFetch(`/api/projects/update/`+projectInfo.value.id, {
-
-            method: "GET",
-        });
-    }
+  if (projectInfo.value) {
+    const result = $csrfFetch(`/api/projects/update/` + projectInfo.value.id, {
+      method: "GET",
+    });
+  }
 }
 
-// How much time to put on the timeline as padding before the start of the ealiest task
+// How much time to put on the timeline as padding before the start of the earliest task
 // and end of the latest task
 const PADDING_MS = 604800000;
 
@@ -120,7 +120,7 @@ const groups = computed<TimelineGroup[]>(() => {
 const selectedTask = ref<TimelineItemWithData | null>(null);
 
 type TimelineItemWithData = TimelineItem & {
-  data: ApiResponse<"/api/tasks/:projectId", "get">[number];
+  data: ApiResponse<"/api/task/:projectId", "get">[number];
 };
 
 function taskSelect({
@@ -142,7 +142,6 @@ const taskName = ref<string | null>(null);
 const taskDesc = ref<string | null>(null);
 // TODO: type this
 const dateValue = ref<DateRange | undefined>();
-
 
 async function addTask() {
   // TODO: better validation
@@ -179,13 +178,13 @@ async function addTask() {
 
   const result = await $csrfFetch(`/api/tasks`, { method: "POST", body });
 
-    if (result.id) {
-        // TODO: fix this not refreshing
-        renderTask(startDate, endDate, taskName.value, result.id);
-    } else {
-        alert('Failed to add task');
-    }
-    updateChannel();
+  if (result.id) {
+    // TODO: fix this not refreshing
+    renderTask(startDate, endDate, taskName.value, result.id);
+  } else {
+    alert("Failed to add task");
+  }
+  updateChannel();
 }
 
 async function modifyTask() {
@@ -233,6 +232,25 @@ async function modifyTask() {
     updateChannel();
   } else {
     alert("Failed to modify task");
+  }
+}
+
+async function deleteTask() {
+  if (!selectedTask.value) return;
+
+  const body: DeleteTaskSchema = {
+    id: selectedTask.value.data.id,
+  };
+
+  const result = await $csrfFetch(`/api/tasks`, { method: "DELETE", body });
+
+  console.log(result);
+
+  if (result.id) {
+    taskRefresh();
+    updateChannel();
+  } else {
+    alert("Failed to delete task");
   }
 }
 
@@ -343,7 +361,6 @@ function renderTask(
       </template>
     </AppDialog>
 
-    <!-- 
     <AppDialog
       title="Delete task"
       description="Are you sure you want to delete this task?"
@@ -353,13 +370,11 @@ function renderTask(
       </template>
       <template #body>
         <form class="flex flex-col gap-2" @submit.prevent="deleteTask">
-          <DatePicker date-picker-label="Timespan" v-model="dateValue" />
           <div class="flex justify-end mt-4">
             <ButtonPrimary type="submit"> Delete Task </ButtonPrimary>
           </div>
         </form>
       </template>
     </AppDialog>
-    -->
   </div>
 </template>
