@@ -5,41 +5,32 @@ definePageMeta({
     sidebarType: 'org',
 });
 
-const { $csrfFetch, $authClient } = useNuxtApp();
+const { $csrfFetch } = useNuxtApp();
 
 const route = useRoute();
 // https://nuxt.com/docs/4.x/api/composables/use-fetch#reactive-keys-and-shared-state
 const orgSlug = computed(() => route.params.orgSlug);
 
-const activeOrg = $authClient.useActiveOrganization();
-const orgId = computed(() => activeOrg.value.data?.id);
-
 const { 
-    data: projects,
-    pending: projectsPending,
-    error: projectsError,
+    data: orgData,
+    pending: orgDataPending,
+    error: orgDataError,
     refresh: refreshProjects,
-    execute: fetchProjects,
-} = useFetch(() => `/api/projects/${orgId.value}`, {
+} = useFetch(() => `/api/projects/by-slug/${orgSlug.value}`, {
     method: 'GET',
-    immediate: false,
-    watch: false,
 });
 
-watch(orgId, (id) => {
-    if (id) fetchProjects();
-}, { immediate: true });
 
 async function createProject() {
     if (title.value.length === 0) return;
     if (selectedRepo.value.length === 0) return;
-    if (!activeOrg.value.data) return; // todo: add warnings later?
+    if (!orgData.value) return; // todo: add warnings later?
 
     const [ repoOwner, repoName ] = selectedRepo.value.split('/');
     if (!repoOwner || !repoName) return;
 
     const body: ClientInsertProjectSchema = {
-        organizationId: activeOrg.value.data.id,
+        organizationId: orgData.value.organization.id,
         repo: selectedRepo.value,
         title: title.value,
         repoOwner,
@@ -68,35 +59,36 @@ function selectedRepoChanged(value: string) {
 </script>
 
 <template>
-    <div v-if="activeOrg.isPending">
+    <div v-if="orgDataPending">
         <span>Selected organization:</span>
         <h1 class="text-3xl font-bold animate-pulse">Loading...</h1>
         <span class="mt-4">Projects</span>
     </div>
-    <div v-if="activeOrg.error || !activeOrg.data">
+    <div v-else-if="orgDataError || !orgData">
         There was an error fetching organization info.
     </div>
     <div v-else class="flex flex-col">
         <span>Selected organization:</span>
-        <h1 class="text-3xl font-bold">{{ activeOrg.data.name }}</h1>
+        <h1 class="text-3xl font-bold">{{ orgData.organization.name }}</h1>
         <span class="mt-4">Projects</span>
     </div>
+
     <div 
-        v-if="projectsPending"
+        v-if="orgDataPending"
         class="mt-4 grow flex items-center justify-center">
         <LoadingIcon :size="32" />
     </div>
     <div 
-        v-else-if="projectsError"
+        v-else-if="orgDataError"
         class="mt-4 grow flex items-center justify-center">
-        An error occured loading projects: {{ projectsError ?? 'Unknown Error' }}
+        An error occured loading projects: {{ orgDataError ?? 'Unknown Error' }}
     </div>
     <div 
         v-else
         class="h-full mt-4 grow grid gap-2 grid-cols-4 overflow-y-auto">
         
         <NuxtLink
-            v-for="project in projects"
+            v-for="project in orgData?.projects"
             :key="project.id"
             class="bg-main-800 flex flex-col gap-2 max-h-40 p-4 ring-md rounded-lg hover:bg-main-700 cursor-pointer transition-all duration-75"
             :to="{ name: 'dashboard-orgSlug-projectId', params: { orgSlug, projectId: project.id }  }">
