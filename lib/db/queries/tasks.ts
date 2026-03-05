@@ -3,6 +3,7 @@ import {
   tasks,
   type InsertTaskSchema,
   type ModifyTaskSchema,
+  type DeleteTaskSchema,
   type TasksSchema,
 } from "../schema";
 import db from "../index";
@@ -56,6 +57,13 @@ export async function modifyTask(values: ModifyTaskSchema) {
   return await db
     .update(tasks)
     .set(values)
+    .where(sql`id = ${values.id}`)
+    .returning({ id: tasks.id });
+}
+
+export async function deleteTask(values: DeleteTaskSchema) {
+  return await db
+    .delete(tasks)
     .where(sql`id = ${values.id}`)
     .returning({ id: tasks.id });
 }
