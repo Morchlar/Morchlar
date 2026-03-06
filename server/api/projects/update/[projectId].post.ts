@@ -5,9 +5,12 @@ export default defineAuthenticatedEventHandler(async (event) => {
     try {
         const userId = event.context.user.id;
         const projectId = validateRouterParam(event, 'projectId');
+        const bodySchema = z.object({
+            orgId: z.string(),
+        })
+        const body = await validateBody(event, bodySchema);
+        await ensureUserInOrg(event, userId, body.orgId);
 
-        await ensureUserCanAccessProject(userId, projectId);
-        console.log("hi!");
         await pusher.trigger("project"+projectId, "update", {});
         return true;
     } catch(error: any) {
@@ -17,6 +20,4 @@ export default defineAuthenticatedEventHandler(async (event) => {
             statusMessage: "An error has occured, "+error
         });
     }
-    
-
 });

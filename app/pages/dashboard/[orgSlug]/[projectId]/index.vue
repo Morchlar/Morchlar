@@ -71,7 +71,10 @@ if (projectInfo.value) {
 async function updateChannel() {
   if (projectInfo.value) {
     const result = $csrfFetch(`/api/projects/update/` + projectInfo.value.id, {
-      method: "GET",
+      method: "POST",
+      body: {
+        orgId: projectInfo.value.organizationId,
+      }
     });
   }
 }
@@ -132,7 +135,7 @@ function taskSelect({
   event: MouseEvent;
   item: TimelineMarker | TimelineItemWithData;
 }) {
-  if (event.type === "click" && item.type === "range") {
+  if (item && event.type === "click" && item.type === "range") {
     selectedTask.value = item;
     console.log(selectedTask);
   }
