@@ -1,6 +1,7 @@
 <script setup lang="ts">
 definePageMeta({
     sidebarType: 'user',
+    middleware: [ 'dashboard' ],
 });
 
 const auth = useAuth();
