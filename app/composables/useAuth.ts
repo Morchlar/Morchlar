@@ -7,6 +7,7 @@ export const useAuth = () => {
     const signInWithGitHub = async () => {
         await $authClient.signIn.social({
             provider: 'github',
+            scopes: [ 'user:email', 'repo' ],
             callbackURL: '/dashboard',
             errorCallbackURL: '/error',
         });
@@ -19,13 +20,22 @@ export const useAuth = () => {
 
     const currentSessionToken = computed(() => $authSession.data.value?.session.token);
 
+    async function grantGitHubPermissions() {
+        return await $authClient.linkSocial({
+            provider: 'github',
+            scopes: [ 'user:email', 'repo' ],
+        });
+    }
+
     return {
         user,
         isLoading,
 
         signInWithGitHub,
-        
+        grantGitHubPermissions,
+
         listSessions,
+        
 
         currentSessionToken,
     };
