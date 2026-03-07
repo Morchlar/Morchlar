@@ -23,31 +23,31 @@ const auth = useAuth();
                 class="inline-flex items-center justify-center gap-2"
                 :to="{ name: 'dashboard-account-profile' }">
                 <Icon name="hugeicons:user" />
-                Profile
+                <span class="hidden md:block">Profile</span>
             </ButtonTertiary>
             <ButtonTertiary 
                 class="inline-flex items-center justify-center gap-2"
                 :to="{ name: 'dashboard-account-security' }">
                 <Icon name="hugeicons:shield-01" />
-                Security
+                <span class="hidden md:block">Security</span>
             </ButtonTertiary>
             <ButtonTertiary 
                 class="inline-flex items-center justify-center gap-2"
                 :to="{ name: 'dashboard-account-sessions' }">
                 <Icon name="hugeicons:key-01" />
-                Sessions
+                <span class="hidden md:block">Sessions</span>
             </ButtonTertiary>
             <ButtonTertiary 
                 class="inline-flex items-center justify-center gap-2"
                 :to="{ name: 'dashboard-account-accounts' }">
                 <Icon name="hugeicons:link-01" />
-                Accounts
+                <span class="hidden md:block">Accounts</span>
             </ButtonTertiary>
             <ButtonTertiary 
                 class="inline-flex items-center justify-center gap-2"
                 :to="{ name: 'dashboard-account-danger' }">
                 <Icon name="hugeicons:alert-01" />
-                Danger
+                <span class="hidden md:block">Danger</span>
             </ButtonTertiary>
         </div>
 
