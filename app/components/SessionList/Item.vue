@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { Session } from 'better-auth';
+import type { ApiResponse } from "~/composables/apiResponse";
 import { UAParser } from 'ua-parser-js';
 
 const props = withDefaults(defineProps<{
-    session: Session,
+    session: ApiResponse<"/api/user/get-sessions", "get">[number],
     isCurrentSession?: boolean,
 }>(), {
     isCurrentSession: false,

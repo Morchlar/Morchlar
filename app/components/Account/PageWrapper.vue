@@ -3,7 +3,7 @@ const auth = useAuth();
 </script>
 
 <template>
-    <div class="flex flex-col gap-8 max-w-full md:max-w-3xl w-full mx-auto mt-8">
+    <div class="flex flex-col gap-8 h-full max-w-full md:max-w-3xl w-full mx-auto mt-8">
         <div v-if="!auth.user.value">
             Loading profile...
         </div>
@@ -50,5 +50,7 @@ const auth = useAuth();
                 Danger
             </ButtonTertiary>
         </div>
+
+        <slot />
     </div>
 </template>

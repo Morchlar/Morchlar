@@ -1,4 +1,4 @@
-export const useAuth =() => {
+export const useAuth = () => {
     const { $authClient, $authSession } = useNuxtApp();
 
     const user = computed(() => $authSession.data.value?.user);
@@ -22,8 +22,11 @@ export const useAuth =() => {
     return {
         user,
         isLoading,
+
         signInWithGitHub,
+        
         listSessions,
+
         currentSessionToken,
     };
 }
