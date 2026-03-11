@@ -13,15 +13,15 @@ const {
 
 // const nonCredentialAccounts = computed(() => accounts.value?.filter((a) => a.providerId !== 'credential'));
 
-const githubInfo = accounts.value?.find((a) => a.providerId === 'github');
+const githubInfo = computed(() => accounts.value?.find((a) => a.providerId === 'github'));
 
 const githubScopes = computed<Record<string, { name: string, granted: boolean }>>(() => ({
-    'user:email': { name: 'Read account email', granted: githubInfo?.scopes.includes('user:email') ?? false },
-    'repo': { name: 'Access repositories', granted: githubInfo?.scopes.includes('repo') ?? false }
+    'user:email': { name: 'Read account email', granted: githubInfo.value?.scopes.includes('user:email') ?? false },
+    'repo': { name: 'Access repositories', granted: githubInfo.value?.scopes.includes('repo') ?? false }
 }));
 
 const linkedStatus = computed(() => {
-    if (!githubInfo?.createdAt) return 'Unlinked';
+    if (!githubInfo.value?.createdAt) return 'Unlinked';
 
     if (Object.values(githubScopes.value).find((s) => s.granted === false)) return 'Insufficient Permissions';
 
@@ -65,7 +65,7 @@ const linkedStatus = computed(() => {
                                 </li>
                             </ul>
                         </div>
-                        <div>
+                        <div class="ml-auto flex flex-col">
                             <ButtonPrimary 
                                 v-if="linkedStatus === 'Unlinked'"
                                 @click="auth.signInWithGitHub()">

@@ -23,7 +23,6 @@ export const useAuth = () => {
     async function grantGitHubPermissions() {
         return await $authClient.linkSocial({
             provider: 'github',
-            scopes: [ 'user:email', 'repo' ],
         });
     }
 
