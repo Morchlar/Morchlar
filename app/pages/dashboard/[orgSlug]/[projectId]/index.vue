@@ -15,6 +15,7 @@ import {
 } from "~~/lib/db/schema";
 import Pusher from "pusher-js";
 import type { ApiResponse } from "~/composables/apiResponse";
+import { ifError } from "node:assert";
 
 definePageMeta({
     sidebarType: "project",
@@ -118,6 +119,7 @@ tasksInfo?.value?.forEach((task) => {
         label: task.title,
         visible: visible,
         parentId: task.parentId,
+        order: task.order,
     });
 });
 
@@ -134,10 +136,13 @@ const groups = computed<TimelineGroup[]>(() => {
     //});
     return groupsInfo
     .filter(group => group.visible==true)
-    .map((group): TimelineGroup =>{
+    .map((group): TimelineTaskGroup =>{
         return {
             id: group.id,
             label: group.label,
+            visible: group.visible,
+            parentId: group.parentId,
+            order: group.order,
         };
     });
 });
@@ -145,9 +150,8 @@ const groups = computed<TimelineGroup[]>(() => {
 type TimelineTaskGroup = TimelineGroup & {
     visible: boolean,
     parentId: number | null,
+    order: number | null,
 };
-
-
 
 const selectedTask = ref<TimelineItemWithData | null>(null);
 type TimelineItemWithData = TimelineItem & {
@@ -294,7 +298,7 @@ function renderTask(
 ) {
     // TODO check whether sub-task or not and decide on how to render.
     // Could also stop function from being called entirely.
-    groups.value.push({
+    groupsInfo.value.push({
         id: taskId.toString(),
         label: groupName,
     });
@@ -304,15 +308,14 @@ function renderTask(
 function renderSubTask(taskTitle: string | undefined) {
     if(!tasksInfo.value||taskTitle===undefined) return;
     const task = tasksInfo.value.find(task => task.title===taskTitle);
-    if(!task || !task.id) return;
+    if(!task || !task.id ) return;
 
     let subTasks = groupsInfo.filter(group => group.parentId == task.id);
-    subTasks.forEach((group)=>{
-        group.visible = true;
+    subTasks.forEach((group) => {
+        group.visible = !group.visible;
+        // group.label = "   "+group.label;
+        renderSubTask(group.label);
     });
-    
-    let visible = groupsInfo.find(group => group.label===taskTitle)?.visible;
-    visible = true;
 }
 </script>
 
@@ -340,7 +343,7 @@ function renderSubTask(taskTitle: string | undefined) {
             @click="taskSelect">
             <template #group-label="{ group }">
                 <form @submit.prevent="renderSubTask(group.label)">
-                    <ButtonPrimary type="submit">
+                    <ButtonPrimary type="submit" v-if="!(group as TimelineTaskGroup).parentId">
                         Drop
                     </ButtonPrimary>
                     {{ group.label }}
