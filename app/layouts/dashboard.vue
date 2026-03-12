@@ -1,15 +1,17 @@
 <script setup lang="ts">
+const route = useRoute();
+const sidebarType = computed(() => route.meta.sidebarType);
+
 const organizationsStore = useOrganizationsStore();
+const projectsStore = useProjectsStore();
 
 await callOnce('organizationsStore', () => organizationsStore.fetchOrganizations());
 
-const route = useRoute();
+watch(route, (route) => {
+    if (!route.params.orgSlug) return;
 
-const orgSlug = computed(() => route.params.orgSlug);
-const projectId = computed(() => route.params.projectId);
-
-const sidebarType = computed(() => route.meta.sidebarType);
-
+    projectsStore.fetchForSlug(String(route.params.orgSlug));
+});
 </script>
 
 <template>
@@ -27,21 +29,9 @@ const sidebarType = computed(() => route.meta.sidebarType);
 
         <div class="grow flex flex-col min-h-0">
             <nav 
-                class="flex flex-row gap-2 p-2
-                bg-main-800 ring-1 ring-inset ring-main-50/10">
-                <ButtonSecondary
-                    v-if="projectId"
-                    class="inline-flex items-center gap-2"
-                    :to="{ name: 'dashboard-orgSlug', params: { orgSlug } }">
-                    <Icon name="hugeicons:arrow-left-01" />
-                    Projects
-                </ButtonSecondary>
-                <ButtonSecondary
-                    v-else
-                    class="inline-flex items-center gap-2"
-                    disabled>
-                    All Projects
-                </ButtonSecondary>
+                class="min-h-14 flex flex-row gap-2 p-2
+                bg-main-800 border-b border-main-50/10">
+                <NavbarProjectsDropdown />
             </nav>
             <main class="grow flex flex-col p-2 overflow-y-auto">
                 <NuxtPage />

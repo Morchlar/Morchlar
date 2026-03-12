@@ -46,6 +46,8 @@ export const ClientInsertProject = createInsertSchema(projects).omit({
     createdAt: true,
     updatedAt: true,
     repoId: true,
+    repoName: true,
+    repoOwner: true,
 }).extend({
     repo: z.string(),
 });
