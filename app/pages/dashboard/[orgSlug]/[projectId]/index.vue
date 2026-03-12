@@ -113,7 +113,7 @@ const bounds = computed<{ lower: number; upper: number }>(() => {
 const groupsInfo = reactive<TimelineTaskGroup[]>([]);
 tasksInfo?.value?.forEach((task) => {
     let visible = true;
-    if(task.parentId!==null) visible=false;
+    if (task.parentId !== null) visible = false;
     groupsInfo.push({
         id: `${task.id}-group`,
         label: task.title,
@@ -135,16 +135,16 @@ const groups = computed<TimelineGroup[]>(() => {
     //    };
     //});
     return groupsInfo
-    .filter(group => group.visible==true)
-    .map((group): TimelineTaskGroup =>{
-        return {
-            id: group.id,
-            label: group.label,
-            visible: group.visible,
-            parentId: group.parentId,
-            order: group.order,
-        };
-    });
+        .filter(group => group.visible == true)
+        .map((group): TimelineTaskGroup => {
+            return {
+                id: group.id,
+                label: group.label,
+                visible: group.visible,
+                parentId: group.parentId,
+                order: group.order,
+            };
+        });
 });
 
 type TimelineTaskGroup = TimelineGroup & {
@@ -280,7 +280,6 @@ async function deleteTask() {
 
     const result = await $csrfFetch(`/api/tasks`, { method: "DELETE", body });
 
-    console.log(result);
 
     if (result.id) {
         taskRefresh();
@@ -306,9 +305,9 @@ function renderTask(
 }
 
 function renderSubTask(taskTitle: string | undefined) {
-    if(!tasksInfo.value||taskTitle===undefined) return;
-    const task = tasksInfo.value.find(task => task.title===taskTitle);
-    if(!task || !task.id ) return;
+    if (!tasksInfo.value || taskTitle === undefined) return;
+    const task = tasksInfo.value.find(task => task.title === taskTitle);
+    if (!task || !task.id) return;
 
     let subTasks = groupsInfo.filter(group => group.parentId == task.id);
     subTasks.forEach((group) => {
@@ -400,7 +399,7 @@ function renderSubTask(taskTitle: string | undefined) {
                 </form>
             </template>
         </AppDialog>
-        <div v-if="(selectedTask.data.depth<=3)||(selectedTask.data.depth===0)">
+        <div v-if="(selectedTask.data.depth <= 3) || (selectedTask.data.depth === 0)">
             <h2 class="mt-4">Add a new task:</h2>
             <AppDialog title="Add a new sub-task" description="Select a title, description, and date range.">
                 <template #trigger>
@@ -409,7 +408,8 @@ function renderSubTask(taskTitle: string | undefined) {
                 <template #body>
                     <form class="flex flex-col gap-2" @submit.prevent="addTask(selectedTask.data.id)">
                         <AppFormInput v-model="taskName" label="Title" name="title" placeholder="My Task" />
-                        <AppFormInput v-model="taskDesc" label="Description" name="description" placeholder="We need to..." />
+                        <AppFormInput v-model="taskDesc" label="Description" name="description"
+                            placeholder="We need to..." />
                         <DatePicker date-picker-label="Timespan" v-model="dateValue" />
                         <div class="flex justify-end mt-4">
                             <ButtonPrimary type="submit"> Create Sub-Task </ButtonPrimary>
