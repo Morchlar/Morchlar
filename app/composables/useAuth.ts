@@ -26,6 +26,10 @@ export const useAuth = () => {
         });
     }
 
+    async function signOut() {
+        return await $authClient.signOut();
+    }
+
     return {
         user,
         isLoading,
@@ -34,6 +38,8 @@ export const useAuth = () => {
         grantGitHubPermissions,
 
         listSessions,
+
+        signOut,
         
 
         currentSessionToken,

@@ -42,10 +42,12 @@ const sidebarType = computed(() => route.meta.sidebarType);
             </ButtonSecondary>
         </nav>
         <div class="grow w-full flex flex-row min-h-0">
-            <aside class="w-xs bg-main-800 border-r border-main-50/10 p-2">
+            <aside class="min-w-2xs bg-main-800 border-r border-main-50/10 p-2 flex flex-col justify-between">
                 <UserSidebar v-if="sidebarType === 'user'" />
                 <OrgSidebar v-else-if="sidebarType === 'org'" />
                 <ProjectSidebar v-else-if="sidebarType === 'project'" />
+
+                <SidebarAccountCard />
             </aside>
             <main class="grow w-full flex flex-col p-2 overflow-y-auto">
                 <NuxtPage />

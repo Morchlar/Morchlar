@@ -5,14 +5,7 @@ definePageMeta({
 });
 
 const auth = useAuth();
-const router = useRouter();
 const { $authClient } = useNuxtApp();
-
-async function signOut() {
-    await $authClient.signOut();
-
-    router.push({ name: 'index' });
-}
 
 const organizations = $authClient.useListOrganizations();
 
@@ -59,12 +52,6 @@ async function createOrganization() {
     <h1 class="text-3xl font-bold">
         My Organizations
     </h1>
-
-    <div class="flex flex-row gap-2">
-        <ButtonPrimary @click="signOut">
-            Sign out
-        </ButtonPrimary>
-    </div>
     
     <div 
         v-if="organizations.error"
