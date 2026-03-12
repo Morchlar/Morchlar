@@ -7,7 +7,7 @@ export async function ensureUserInOrg(event: H3Event, userId: string, organizati
         headers: event.headers,
         body: {
             permissions: {
-                organization: [ 'update' ],
+                project: [ 'update' ],
             },
             organizationId,
         },
