@@ -22,7 +22,7 @@ const admin = ac.newRole({
 }); 
 
 const member = ac.newRole({ 
-    project: [], 
+    project: ['update'], 
     ...memberAc.statements,
 }); 
 

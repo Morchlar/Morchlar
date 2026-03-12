@@ -25,7 +25,7 @@ export default defineAuthenticatedEventHandler(async (event) => {
         headers: event.headers,
         body: {
             permissions: {
-                organization: [ 'update' ],
+                project: ['update']
             },
             organizationId: org.id,
         },
