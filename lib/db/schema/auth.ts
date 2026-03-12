@@ -8,6 +8,8 @@ import {
     uniqueIndex,
 } from "drizzle-orm/pg-core";
 import { projects } from "./projects";
+import { createInsertSchema } from "drizzle-zod";
+import type z from "zod";
 
 // Generated with `bunx auth generate`
 
@@ -85,6 +87,7 @@ export const verification = pgTable(
     (table) => [index("verification_identifier_idx").on(table.identifier)],
 );
 
+
 export const organization = pgTable(
     "organization",
     {
@@ -97,6 +100,15 @@ export const organization = pgTable(
     },
     (table) => [uniqueIndex("organization_slug_uidx").on(table.slug)],
 );
+
+export const InsertOrganization = createInsertSchema(organization)
+    .omit({
+        id: true,
+        createdAt: true,
+    });
+
+export type InsertOrganizationSchema = z.infer<typeof InsertOrganization>;
+
 
 export const member = pgTable(
     "member",

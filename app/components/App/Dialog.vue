@@ -9,15 +9,17 @@ withDefaults(defineProps<{
     triggerAsChild: true,
 });
 
+const isOpen = defineModel('isOpen', { default: false });
+
 </script>
 
 <template>
-    <DialogRoot>
+    <DialogRoot v-model:open="isOpen">
         <DialogTrigger :as-child="triggerAsChild">
             <slot name="trigger" />
         </DialogTrigger>
         <DialogPortal>
-            <DialogOverlay class="bg-black/50 fixed inset-0 z-30" />
+            <DialogOverlay class="bg-black/50 fixed inset-0 z-30 backdrop-blur-xs" />
 
             <DialogContent 
                 class="fixed top-1/2 left-1/2 max-h-[80dvh] w-[90dvw] max-w-md -translate-x-1/2 -translate-y-1/2 z-100

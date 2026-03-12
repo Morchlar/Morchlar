@@ -1,20 +1,47 @@
 <script setup lang="ts">
-// const { $authSession } = useNuxtApp();
+import { InsertOrganization } from '~~/lib/db/schema';
 
-// const selectedGroup = computed(() => $authSession.data.value?.user.selectedGroup);
-// const selectedProject = computed(() => $authSession.data.value?.user.selectedProject);
-
+const router = useRouter();
+const { $authClient } = useNuxtApp();
 const organizationsStore = useOrganizationsStore();
 const { organizations, loading, error } = storeToRefs(organizationsStore);
 
-const route = useRoute();
-
-const orgSlug = computed(() => route.params.orgSlug);
-const projectId = computed(() => route.params.projectId);
-
-const sidebarType = computed(() => route.meta.sidebarType);
-
 const popoverOpen = ref(false);
+
+const { handleSubmit, errors, meta, setErrors, resetForm } = useForm({
+    validationSchema: toTypedSchema(InsertOrganization),
+});
+
+const { isOpen, isLoading, submitHandler, confirmBeforeExiting, submitError } = useEditDialogForm({ meta, handleSubmit, setErrors });
+
+const onSubmit = submitHandler(
+    async ({ name, slug }) => {
+        if (!name || !slug) return { error: true, message: 'Invalid name or slug.' };
+
+        try {
+            const created = await $authClient.organization.create({ name, slug });
+
+            if (created.error) {
+                return { error: true, message: created.error.message ?? 'Unknown error creating org.' }
+            } else {
+                return { error: false, data: created.data };
+            }
+        } catch (e) {   
+            return { error: true, message: 'Unknown error. Please try again.' };
+        }
+    }, 
+    async ({ slug }) => {
+        router.push({ name: 'dashboard-orgSlug', params: { orgSlug: slug } });
+        organizationsStore.fetchOrganizations();
+        popoverOpen.value = false;
+    }
+);
+
+watch(isOpen, (newValue) => {
+    if (newValue) {
+        resetForm();
+    }
+});
 
 </script>
 
@@ -37,7 +64,7 @@ const popoverOpen = ref(false);
             </div>
         </template>
 
-        <template #content>
+        <template #content="{ close: closePopover }">
             <div class="min-w-68">
                 <div class="flex flex-col gap-2 p-2">
                     <template v-if="loading || !organizations">
@@ -50,7 +77,8 @@ const popoverOpen = ref(false);
                             class="inline-flex justify-between items-center px-2! text-sm"
                             exact-active-class="group active"
                             :key="organization.id"
-                            :to="{ name: 'dashboard-orgSlug', params: { orgSlug: organization.slug } }">
+                            :to="{ name: 'dashboard-orgSlug', params: { orgSlug: organization.slug } }"
+                            @click="closePopover">
                             <span>{{ organization.name }}</span>
                             <Icon 
                                 name="hugeicons:tick-02" 
@@ -62,24 +90,61 @@ const popoverOpen = ref(false);
                 <div class="w-full h-px bg-main-50/10 mb-2"></div>
 
                 <div class="p-2">
-                    <ButtonTertiary
-                        bg-level="700"
-                        class="w-full inline-flex items-center px-2! gap-2"
-                        :to="{ name: 'dashboard-account-profile' }"
-                        @click="popoverOpen = false">
-                        <Icon 
-                            name="hugeicons:add-01"
-                            size="20"
-                            class="text-txt-secondary" />
-                        <div class="flex flex-col items-start">
-                            <span>
-                                Create new organization
+                    <AppDialog
+                        title="Create a new organization"
+                        description="Create a new organization to collaborate with a team."
+                        v-model:is-open="isOpen">
+                        <template #trigger>
+                            <ButtonTertiary
+                                bg-level="700"
+                                class="w-full inline-flex items-center px-2! gap-2">
+                                <Icon 
+                                    name="hugeicons:add-01"
+                                    size="20"
+                                    class="text-txt-secondary" />
+                                <div class="flex flex-col items-start">
+                                    <span>
+                                        Create new organization
+                                    </span>
+                                    <span class="text-xs text-txt-secondary">
+                                        Collaborate with a team
+                                    </span>
+                                </div>
+                            </ButtonTertiary>
+                        </template>
+
+                        <template #body>
+                            <span
+                                v-if="submitError"
+                                class="text-danger-txt font-bold mb-2">
+                                {{ submitError }}
                             </span>
-                            <span class="text-xs text-txt-secondary">
-                                Collaborate with a team
-                            </span>
-                        </div>
-                    </ButtonTertiary>
+                            <AppDynamicForm
+                                :onSubmit
+                                :isLoading
+                                :errors
+                                :submitBtn="{
+                                    icon: 'hugeicons:add-01',
+                                    label: 'Create',
+                                }"
+                                :fields="[
+                                    {
+                                        name: 'name',
+                                        label: 'Name',
+                                        as: 'input',
+                                        type: 'text',
+                                        placeholder: 'e.g. My Org',
+                                    },
+                                    {
+                                        name: 'slug',
+                                        label: 'Slug',
+                                        as: 'input',
+                                        type: 'text',
+                                        placeholder: 'e.g. my-org'
+                                    },
+                                ]" />
+                        </template>
+                    </AppDialog>
                 </div>
             </div>
         </template>

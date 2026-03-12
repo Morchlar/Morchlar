@@ -9,7 +9,9 @@ const isOpen = defineModel('isOpen', { default: false });
 </script>
 
 <template>
-    <PopoverRoot v-model:open="isOpen">
+    <PopoverRoot 
+        v-model:open="isOpen"
+        v-slot="{ close }">
         <PopoverTrigger :as-child="true">
             <slot name="trigger">
                 <span>placeholder popover trigger</span>
@@ -21,7 +23,7 @@ const isOpen = defineModel('isOpen', { default: false });
                 class="bg-main-700 rounded-lg ring-md"
                 :side-offset="5"
                 :collision-padding="5">
-                <slot name="content">
+                <slot name="content" :close>
                     <span>placeholder popover content</span>
                 </slot>
 
