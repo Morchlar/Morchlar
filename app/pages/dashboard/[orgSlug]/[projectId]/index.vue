@@ -376,15 +376,15 @@ function renderSubTask(taskTitle: string | undefined) {
             </template>
             <template #body>
                 <form class="flex flex-col gap-2" @submit.prevent="modifyTask">
-                    <AppFormInput v-model="taskName" label="Title" name="title" placeholder="My Task" />
+                    <AppFormInput v-model="taskName" label="Title" name="title"
+                        :placeholder=selectedTask?.data?.title />
                     <AppFormInput v-model="taskDesc" label="Description" name="description"
-                        placeholder="We need to..." />
-                    <DatePicker date-picker-label="Timespan" v-model="dateValue" />
-                    <div class="flex justify-end mt-4">
+                        :placeholder="selectedTask?.data?.description || 'We need to...'" />
+                    <DatePicker date-picker-label="Timespan" v-model="dateValue" <div class="flex justify-end mt-4">
                         <ButtonPrimary type="submit"> Modify Task </ButtonPrimary>
-                    </div>
-                </form>
-            </template>
+    </div>
+    </form>
+</template>
         </AppDialog>
 
         <AppDialog title="Delete task" description="Are you sure you want to delete this task?">
