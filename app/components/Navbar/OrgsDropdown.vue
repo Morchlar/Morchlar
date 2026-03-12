@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { Organization } from 'better-auth/plugins';
 import { InsertOrganization } from '~~/lib/db/schema';
 
 const router = useRouter();
@@ -43,11 +44,19 @@ watch(isOpen, (newValue) => {
     }
 });
 
+const activeOrg = $authClient.useActiveOrganization();
+
+const currentOrg = computed(() => activeOrg.value.data?.name ?? organizations.value?.active.name ?? 'Select an org');
+
+function onSelectOrg(org: Organization) {
+    $authClient.organization.setActive({ organizationSlug: org.slug });
+    popoverOpen.value = false;
+}
+
 </script>
 
 <template>
-    <AppPopover 
-        :is-open="popoverOpen">
+    <AppPopover v-model:is-open="popoverOpen">
         <template #trigger> 
             <div class="w-full p-2 rounded-lg inline-flex gap-2 items-center cursor-pointer select-none
                 hover:bg-main-700 transition-all duration-75"
@@ -57,14 +66,14 @@ watch(isOpen, (newValue) => {
                 </template>
                 <template v-else>
                     <div class="w-full font-bold inline-flex justify-between items-center">
-                        <span>{{ organizations.active.name }}</span>
+                        <span class="text-ellipsis overflow-hidden line-clamp-1">{{ currentOrg }}</span>
                         <Icon name="hugeicons:arrow-up-down" />
                     </div>
                 </template>
             </div>
         </template>
 
-        <template #content="{ close: closePopover }">
+        <template #content>
             <div class="min-w-68">
                 <div class="flex flex-col gap-2 p-2">
                     <template v-if="loading || !organizations">
@@ -78,7 +87,7 @@ watch(isOpen, (newValue) => {
                             exact-active-class="group active"
                             :key="organization.id"
                             :to="{ name: 'dashboard-orgSlug', params: { orgSlug: organization.slug } }"
-                            @click="closePopover">
+                            @click="onSelectOrg(organization)">
                             <span>{{ organization.name }}</span>
                             <Icon 
                                 name="hugeicons:tick-02" 

@@ -4,7 +4,6 @@ definePageMeta({
     middleware: [ 'dashboard' ],
 });
 
-const auth = useAuth();
 const { $authClient } = useNuxtApp();
 
 const organizations = $authClient.useListOrganizations();
@@ -45,14 +44,6 @@ async function createOrganization() {
 </script>
 
 <template>
-    <span class="text-xl ">
-        Hello {{ auth.user.value?.name }}
-    </span>
-
-    <h1 class="text-3xl font-bold">
-        My Organizations
-    </h1>
-    
     <div 
         v-if="organizations.error"
         class="mt-4 grow flex items-center justify-center">

@@ -20,7 +20,7 @@ const sidebarType = computed(() => route.meta.sidebarType);
 
 <template>
     <div class="w-full min-h-dvh max-h-dvh overflow-hidden flex flex-row">
-        <aside class="min-w-3xs bg-main-800 border-r border-main-50/10 p-2 flex flex-col justify-between">
+        <aside class="min-w-3xs max-w-3xs bg-main-800 border-r border-main-50/10 p-2 flex flex-col justify-between">
             <div class="flex flex-col gap-2">
                 <NavbarOrgsDropdown />
                 <UserSidebar v-if="sidebarType === 'user'" />
