@@ -1,13 +1,7 @@
 <script setup lang="ts">
-// const { $authSession } = useNuxtApp();
-
-// const selectedGroup = computed(() => $authSession.data.value?.user.selectedGroup);
-// const selectedProject = computed(() => $authSession.data.value?.user.selectedProject);
-
 const organizationsStore = useOrganizationsStore();
 
 await callOnce('organizationsStore', () => organizationsStore.fetchOrganizations());
-
 
 const route = useRoute();
 

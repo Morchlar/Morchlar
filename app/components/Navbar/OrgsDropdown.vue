@@ -15,9 +15,28 @@ const { handleSubmit, errors, meta, setErrors, resetForm } = useForm({
 
 const { isOpen, isLoading, submitHandler, confirmBeforeExiting, submitError } = useEditDialogForm({ meta, handleSubmit, setErrors });
 
+
+async function checkSlug(slug: string): Promise<{ validated: boolean, message: string }> {
+    // TODO: fix this
+    const { data, error } = await $authClient.organization.checkSlug({ slug });
+
+    if (error) {
+        return { validated: false, message: 'Error occurred validating slug. Please try again later.' };
+    }
+
+    if (data.status === true) return { validated: true, message: '' };
+
+    return { validated: false, message: 'Group with that slug already exists!' };
+}
+
 const onSubmit = submitHandler(
     async ({ name, slug }) => {
         if (!name || !slug) return { error: true, message: 'Invalid name or slug.' };
+
+        const check = await checkSlug(slug);
+        if (check.validated === false) {
+            return { error: true, message: check.message };
+        }
 
         try {
             const created = await $authClient.organization.create({ name, slug });

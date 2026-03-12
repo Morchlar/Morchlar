@@ -7,40 +7,6 @@ definePageMeta({
 const { $authClient } = useNuxtApp();
 
 const organizations = $authClient.useListOrganizations();
-
-async function createOrganization() {
-    async function promptValidSlug(): Promise<string | null> {
-        while (true) {
-            const slug = prompt("Enter org slug: ");
-            if (!slug) return null;
-
-            const { data, error } = await $authClient.organization.checkSlug({ slug });
-
-            if (error) {
-                alert("There was an error validating the slug. Please try again.");
-                continue;
-            }
-
-            if (data.status) return slug;
-
-            alert("That slug is already taken. Please choose another.");
-        }
-    }
-
-    const name = prompt("Enter organization name:");
-    if (!name) return;
-
-    const slug = await promptValidSlug();
-    if (!slug) return;
-
-    const { data, error } = await $authClient.organization.create({ name, slug });
-
-    if (error) {
-        alert(`There was an error creating this org.`);
-    } else {
-        alert(`Created org with ID: ${data.id}`);
-    }
-}
 </script>
 
 <template>
@@ -66,10 +32,5 @@ async function createOrganization() {
             <span class="text-lg font-semibold">{{ org.name }}</span>
             <!-- <span class="capitalize">Role: <i>{{ org. }}</i></span> -->
         </NuxtLink>
-        <button
-            class="bg-main-800 flex items-center justify-center max-h-40 p-4 ring-md rounded-lg hover:bg-main-700 cursor-pointer transition-all duration-75"
-            @click="createOrganization">
-            <span>Create an organization</span>
-        </button>
     </div>
 </template>
