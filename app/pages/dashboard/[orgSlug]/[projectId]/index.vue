@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import type { DateRange } from "reka-ui";
+import type { DateRange, DateValue } from "reka-ui";
+import { fromDate, getLocalTimeZone, toCalendarDate } from '@internationalized/date'
 import {
     Timeline,
     type TimelineGroup,
@@ -73,6 +74,7 @@ if (projectInfo.value) {
 
 async function updateChannel() {
     if (projectInfo.value) {
+        // TODO Change method
         const result = $csrfFetch(`/api/projects/update/` + projectInfo.value.id, {
             method: "POST",
             body: {
@@ -119,7 +121,6 @@ tasksInfo?.value?.forEach((task) => {
         label: task.title,
         visible: visible,
         parentId: task.parentId,
-        order: task.order,
     });
 });
 
@@ -142,15 +143,14 @@ const groups = computed<TimelineGroup[]>(() => {
                 label: group.label,
                 visible: group.visible,
                 parentId: group.parentId,
-                order: group.order,
             };
         });
 });
 
 type TimelineTaskGroup = TimelineGroup & {
     visible: boolean,
+    expanded?: boolean,
     parentId: number | null,
-    order: number | null,
 };
 
 const selectedTask = ref<TimelineItemWithData | null>(null);
@@ -167,7 +167,8 @@ function taskSelect({
     event: MouseEvent;
     item: TimelineMarker | TimelineItemWithData;
 }) {
-    if (item && event.type === "click" && item.type === "range") {
+    // if (!item) selectedTask.value = null;
+    if (!item || event.type === "click" && item.type === "range") {
         selectedTask.value = item;
         console.log(selectedTask);
     }
@@ -273,49 +274,79 @@ async function modifyTask() {
 
 async function deleteTask() {
     if (!selectedTask.value) return;
+    const taskId = selectedTask.value.data.id;
 
     const body: DeleteTaskSchema = {
-        id: selectedTask.value.data.id,
+        id: taskId,
     };
 
     const result = await $csrfFetch(`/api/tasks`, { method: "DELETE", body });
 
-
     if (result.id) {
         taskRefresh();
         updateChannel();
+        groupsInfo.splice(groupsInfo.findIndex((group)=> group.id === (taskId+"-group")), 1);
     } else {
         alert("Failed to delete task");
     }
 }
 
-function renderTask(
+async function renderTask(
     startTime: Date,
     endTime: Date,
     groupName: string,
     taskId: number,
 ) {
-    // TODO check whether sub-task or not and decide on how to render.
-    // Could also stop function from being called entirely.
-    groupsInfo.value.push({
-        id: taskId.toString(),
-        label: groupName,
-    });
-    taskRefresh();
+    await taskRefresh();
+    console.log("Rendering Task: "+groupName);
+    const task = tasksInfo.value?.find(task=>task.id===taskId);
+    const group = groupsInfo.find(group=>group.id===(taskId+"-group"));
+    if(!task) {console.log("no Task"); return;}
+    if(!group || task.parentId) {
+        console.log("Adding Group");
+        groupsInfo.push({
+            id: taskId.toString()+"-group",
+            label: groupName,
+            visible: true,
+            parentId: task.parentId,
+        });
+    } else {
+        if(!group || !group.label) return;
+        group.id = taskId+"-group";
+        group.label = groupName;
+    }
+    console.log(groupsInfo);
+    if(task?.parentId) {
+        const parent = groupsInfo.find(group=>group.id===(task.parentId+"-group"));
+        console.log("renderSubTask in renderTask");
+        if(!parent?.expanded) {
+            const parentParent = groupsInfo.find(group=>group.id===parent?.id);
+            renderSubTask(parentParent?.label);
+        } else {
+            renderSubTask(parent.label);
+        }
+        
+    }
+    
 }
 
 function renderSubTask(taskTitle: string | undefined) {
-    if (!tasksInfo.value || taskTitle === undefined) return;
-    const task = tasksInfo.value.find(task => task.title === taskTitle);
-    if (!task || !task.id) return;
-
+    if(!tasksInfo.value||taskTitle===undefined) return;
+    const task = tasksInfo.value.find(task => task.title===taskTitle);
+    const parentGroup = groupsInfo.find(group => group.id==(task?.id+"-group"));
+    if(!task || !task.id ) return;
+    console.log(groupsInfo);
     let subTasks = groupsInfo.filter(group => group.parentId == task.id);
     subTasks.forEach((group) => {
         group.visible = !group.visible;
         // group.label = "   "+group.label;
         renderSubTask(group.label);
     });
+    if(parentGroup?.expanded) {
+        parentGroup.expanded=!parentGroup.expanded;
+    }
 }
+
 </script>
 
 <template>

@@ -47,10 +47,10 @@ export async function getTasks(
 }
 
 export async function createTask(values: InsertTaskSchema) {
-  return await db
-    .insert(tasks)
-    .values(values)
-    .returning({ id: tasks.projectId });
+    return await db
+        .insert(tasks)
+        .values(values)
+        .returning({ id: tasks.id });
 }
 
 export async function modifyTask(values: ModifyTaskSchema) {
