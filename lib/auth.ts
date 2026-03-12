@@ -6,6 +6,7 @@ import { ac, owner, admin, member } from './auth-permissions';
 import * as schema from './db/schema';
 import db from "./db";
 import env from "./env";
+import { resend } from "./resend";
 
 export const auth = betterAuth({
     database: drizzleAdapter(db, {
@@ -45,6 +46,21 @@ export const auth = betterAuth({
                     }
                 }
             },
+            sendInvitationEmail: async (data) => {
+                const url = `${env.BETTER_AUTH_URL}/accept-invitation/${data.id}`;
+
+                await resend.emails.send({
+                    from: 'Invites <invites@morchlar.com>',
+                    to: data.email,
+                    template: {
+                        id: 'organization-invite',
+                        variables: {
+                            ORG_NAME: data.organization.name,
+                            INVITE_LINK: url
+                        }
+                    }
+                });
+            }
         }),
     ],
 });

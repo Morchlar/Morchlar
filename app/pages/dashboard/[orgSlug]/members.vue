@@ -34,8 +34,8 @@ async function addUserToGroup() {
         <!-- todo: use vee validate -->
         <form @submit.prevent="addUserToGroup">
             <AppFormInput
-                label="Enter the name of the person you would like to add."
-                placeholder="John Smith"
+                label="Enter the email of the person you would like to add."
+                placeholder="e.g user@email.com"
                 name="userInput"
                 v-model="inviteeEmail"/>
             <select
@@ -45,7 +45,7 @@ async function addUserToGroup() {
                 <option value="admin">Admin</option>
                 <!-- <option value="owner">Owner</option> -->
             </select>
-            <ButtonSecondary type="submit">Add members to organizaation.</ButtonSecondary>
+            <ButtonSecondary type="submit">Add member to organizaation.</ButtonSecondary>
         </form>
         <div v-if="orgMembersError || !orgMembers">
             Error loading organization members: {{ orgMembersError?.message ?? 'Unknown error' }}

@@ -24,14 +24,19 @@ function tryParseEnv<T extends ZodRawShape>(
 
 const EnvSchema = z.object({
     DATABASE_URL: z.string(),
+
     BETTER_AUTH_SECRET: z.string(),
     BETTER_AUTH_URL: z.string(),
+
     GITHUB_CLIENT_ID: z.string(),
     GITHUB_CLIENT_SECRET: z.string(),
+
     PUSHER_APP_ID: z.string(),
     PUSHER_KEY: z.string(),
     PUSHER_SECRET: z.string(),
     PUSHER_CLUSTER: z.string(),
+
+    RESEND_API_KEY: z.string(),
 });
 
 
