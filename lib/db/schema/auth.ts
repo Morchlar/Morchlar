@@ -9,7 +9,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { projects } from "./projects";
 import { createInsertSchema } from "drizzle-zod";
-import type z from "zod";
+import z from "zod";
 
 // Generated with `bunx auth generate`
 
@@ -101,11 +101,13 @@ export const organization = pgTable(
     (table) => [uniqueIndex("organization_slug_uidx").on(table.slug)],
 );
 
-export const InsertOrganization = createInsertSchema(organization)
-    .omit({
-        id: true,
-        createdAt: true,
-    });
+export const InsertOrganization = createInsertSchema(organization, {
+    name: z.string('Name is required!').min(3, 'Minimum 3 characters.').max(64, 'Too long!'),
+    slug: z.string('Slug is required!').min(3, 'Minimum 3 characters.').max(64, 'Too long!'),
+}).omit({
+    id: true,
+    createdAt: true,
+});
 
 export type InsertOrganizationSchema = z.infer<typeof InsertOrganization>;
 
