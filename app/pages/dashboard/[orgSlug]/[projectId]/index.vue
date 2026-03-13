@@ -1,37 +1,14 @@
 <script setup lang="ts">
 import type { DateRange } from "reka-ui";
-import {
-    Timeline,
-    type TimelineGroup,
-    type TimelineItem,
-} from "vue-timeline-chart";
-import "vue-timeline-chart/style.css";
 
-import {
-    type InsertTaskSchema,
-    type ModifyTaskSchema,
-    type DeleteTaskSchema,
-} from "~~/lib/db/schema";
-import type { ApiResponse } from "~/composables/apiResponse";
-
-type TimelineTaskGroup = TimelineGroup & {
-    expanded?: boolean,
-    parentId: number | null,
-
-    order: number | null,
-    depth: number,
-    path: number[],
-};
-
-type TimelineItemWithData = TimelineItem & {
-    data: ApiResponse<"/api/task/:projectId", "get">[number];
-};
+import type { TimelineItemWithData, TimelineTaskGroup } from "~/utils/types/timeline";
+import type { InsertTaskSchema, ModifyTaskSchema, DeleteTaskSchema } from "~~/lib/db/schema";
 
 definePageMeta({
     sidebarType: "project",
 });
 
-const { $csrfFetch} = useNuxtApp();
+const { $csrfFetch } = useNuxtApp();
 const { subscribeToProject, updateChannel } = usePusher();
 const route = useRoute();
 const projectId = computed(() => route.params.projectId);
@@ -89,34 +66,7 @@ function refreshChannel() {
     updateChannel(projectIdFromInfo)
 }
 
-// How much time to put on the timeline as padding before the start of the earliest task
-// and end of the latest task
-const PADDING_MS = 604800000;
-
-const bounds = computed<{ lower: number; upper: number }>(() => {
-    // 1 month behind, 1 month ahead as default view range
-    const defaultValues = {
-        lower: Date.now() - 2629800000,
-        upper: Date.now() + 2629800000,
-    };
-
-    if (!items.value || !items.value[0]) return defaultValues;
-
-    const lowest = items.value.reduce(
-        (lowest, item) => (item.start < lowest.start ? item : lowest),
-        items.value[0],
-    );
-    const highest = items.value.reduce(
-        (highest, item) => (item.start > highest.start ? item : highest),
-        items.value[0],
-    );
-
-    return {
-        lower: lowest.start - PADDING_MS,
-        upper: (highest.end ?? defaultValues.upper) + PADDING_MS,
-    };
-});
-
+// Groups
 const groupsInfo = reactive<TimelineTaskGroup[]>([]);
 watch(tasksInfo, (newTasks) => {
     if (!newTasks) return;
@@ -145,12 +95,7 @@ watch(tasksInfo, (newTasks) => {
     immediate: true,
 });
 
-const groups = computed<TimelineTaskGroup[]>(() => {
-    if (!tasksInfo.value) return [];
-
-    return groupsInfo.filter(isVisible);
-});
-
+// Selected task
 const selectedTask = ref<TimelineItemWithData | null>(null);
 
 function selectTask(item: TimelineItemWithData) {
@@ -272,26 +217,6 @@ async function deleteTask() {
 
     refreshChannel();
 }
-
-function isVisible(group: TimelineTaskGroup): boolean {
-    if (group.depth === 0) return true;
-
-    return group.path.slice(0, -1).every((ancestorId) => {
-        const ancestor = groupsInfo.find(g => g.id === `${ancestorId}-group`);
-        return ancestor?.expanded === true;
-    });
-}
-
-function toggleExpanded(groupId: string) {
-    const group = groupsInfo.find(g => g.id === groupId);
-    if (group) group.expanded = !group.expanded;
-}
-
-function hasChildren(groupId: string): boolean {
-    const taskId = Number(groupId.replace('-group', ''));
-    
-    return groupsInfo.some(g => g.parentId === taskId);
-}
 </script>
 
 <template>
@@ -311,44 +236,18 @@ function hasChildren(groupId: string): boolean {
         </div>
     </div>
 
-    <div class="ring-md rounded-sm touch-none">
-        <div v-if="tasksPending">Loading timeline...</div>
-        <div v-else-if="tasksError">There was an error loading the timeline</div>
-        <Timeline 
-            v-else 
-            :items 
-            :groups 
-            :initial-viewport-start="bounds.lower" 
-            :initial-viewport-end="bounds.upper">
-            <template #group-label="{ group }">
-                <div 
-                    class="flex items-center gap-1"
-                    :class="{
-                        'ml-2': group.path.length > 1,
-                        'ml-4': group.path.length > 2
-                    }">
-                    <button 
-                        v-if="hasChildren(group.id)"
-                        @click="toggleExpanded(group.id)">
-                        <Icon 
-                            name="hugeicons:arrow-right-01"
-                            :class="{ 'rotate-90': group.expanded }" />
-                        {{ group.label }}
-                    </button>
-                    <span 
-                        v-else
-                        class="ml-4">
-                        {{ group.label }}
-                    </span>
-                </div>
-            </template>
-
-            <template #item="{ item }">
-                <div 
-                    class="size-full bg-brand ring-md rounded-sm"
-                    @click="selectTask(item)"></div>
-            </template>
-        </Timeline>
+    <div class="ring-md touch-none">
+        <AppGanttFallback
+            v-if="tasksPending || tasksError">
+            {{ tasksPending 
+                ? 'Loading chart...' 
+                : 'There was an error loading the timeline. Please try again' }}
+        </AppGanttFallback>
+        <AppGantt 
+            v-else
+            :items
+            :groupsInfo
+            @selected-task="selectTask" />
     </div>
 
     <h2 class="mt-4">Add a new task:</h2>

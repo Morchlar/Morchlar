@@ -1,0 +1,15 @@
+import type { TimelineGroup, TimelineItem } from 'vue-timeline-chart';
+import type { ApiResponse } from './apiResponse';
+
+export type TimelineTaskGroup = TimelineGroup & {
+    expanded?: boolean,
+    parentId: number | null,
+
+    order: number | null,
+    depth: number,
+    path: number[],
+};
+
+export type TimelineItemWithData = TimelineItem & {
+    data: ApiResponse<"/api/task/:projectId", "get">[number];
+};
