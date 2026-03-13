@@ -200,8 +200,8 @@ async function modifyTask() {
     refreshChannel();
 }
 
-async function deleteTask() {
-    if (!selectedTask.value) return;
+async function deleteTask(): Promise<{ error: boolean, message?: string }> {
+    if (!selectedTask.value) return { error: true, message: 'No selected task' };
     const taskId = selectedTask.value.data.id;
 
     const body: DeleteTaskSchema = {
@@ -211,11 +211,12 @@ async function deleteTask() {
     const result = await $csrfFetch(`/api/tasks`, { method: "DELETE", body });
 
     if (!result.id) {
-        alert("Failed to delete task");
-        return;
+        console.error(result)
+        return { error: true, message: 'Unknown error deleting task. Please try again later.' }
     }
 
     refreshChannel();
+    return { error: false };
 }
 </script>
 
@@ -251,12 +252,16 @@ async function deleteTask() {
     </div>
 
     <h2 class="mt-4">Add a new task:</h2>
-    <AppDialog title="Add a new task" description="Select a title, description, and date range.">
+    <AppDialog 
+        title="Add a new task" 
+        description="Select a title, description, and date range.">
         <template #trigger>
             <ButtonSecondary> New Task </ButtonSecondary>
         </template>
         <template #body>
-            <form class="flex flex-col gap-2" @submit.prevent="addTask()">
+            <form 
+                class="flex flex-col gap-2" 
+                @submit.prevent="addTask()">
                 <AppFormInput v-model="taskName" label="Title" name="title" placeholder="My Task" />
                 <AppFormInput v-model="taskDesc" label="Description" name="description" placeholder="We need to..." />
                 <DatePicker date-picker-label="Timespan" v-model="dateValue" />
@@ -287,18 +292,16 @@ async function deleteTask() {
             </template>
         </AppDialog>
 
-        <AppDialog title="Delete task" description="Are you sure you want to delete this task?">
+        <AppActionButton 
+            :action="deleteTask"
+            description="Are you sure you want to delete this task?"
+            :require-are-you-sure="true"
+            variant="danger">
             <template #trigger>
-                <ButtonSecondary> Delete Task </ButtonSecondary>
+                Delete Task
             </template>
-            <template #body>
-                <form class="flex flex-col gap-2" @submit.prevent="deleteTask">
-                    <div class="flex justify-end mt-4">
-                        <ButtonPrimary type="submit"> Delete Task </ButtonPrimary>
-                    </div>
-                </form>
-            </template>
-        </AppDialog>
+        </AppActionButton>
+
         <div v-if="(selectedTask.data.depth <= 3) || (selectedTask.data.depth === 0)">
             <h2 class="mt-4">Add a new task:</h2>
             <AppDialog title="Add a new sub-task" description="Select a title, description, and date range.">
