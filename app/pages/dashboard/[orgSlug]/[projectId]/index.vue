@@ -1,29 +1,15 @@
 <script setup lang="ts">
-import type { DateRange, DateValue } from "reka-ui";
-import { fromDate, getLocalTimeZone, toCalendarDate } from '@internationalized/date'
-import {
-    Timeline,
-    type TimelineGroup,
-    type TimelineItem,
-    type TimelineMarker,
-} from "vue-timeline-chart";
-import "vue-timeline-chart/style.css";
-import {
-    tasks,
-    type InsertTaskSchema,
-    type ModifyTaskSchema,
-    type DeleteTaskSchema,
-} from "~~/lib/db/schema";
-import Pusher from "pusher-js";
-import type { ApiResponse } from "~/composables/apiResponse";
-import { ifError } from "node:assert";
+import type { DateRange } from "reka-ui";
+
+import type { TimelineItemWithData, TimelineTaskGroup } from "~/utils/types/timeline";
+import type { InsertTaskSchema, ModifyTaskSchema, DeleteTaskSchema } from "~~/lib/db/schema";
 
 definePageMeta({
     sidebarType: "project",
 });
 
 const { $csrfFetch } = useNuxtApp();
-
+const { subscribeToProject, updateChannel } = usePusher();
 const route = useRoute();
 const projectId = computed(() => route.params.projectId);
 
@@ -32,12 +18,11 @@ const {
     pending: projectInfoPending,
     error: projectInfoError,
 } = useFetch(() => `/api/project/${projectId.value}`, { method: "GET" });
-console.log(projectId.value);
+
 const {
     data: tasksInfo,
     pending: tasksPending,
     error: tasksError,
-    refresh: taskRefresh,
 } = useFetch(() => `/api/task/${projectId.value}`, { method: "GET" });
 
 // maybe add controls later on
@@ -59,118 +44,63 @@ const items = computed<TimelineItemWithData[]>(() => {
 });
 
 // TEST
-
 // Pusher
-const pusher = new Pusher("e41e7620d6ab296d33aa", {
-    cluster: "eu",
-});
 
-Pusher.logToConsole = true;
+// Sub to pusher channel for active project.
+watch(projectId, () => {
+    const projectIdFromInfo = projectInfo.value?.id;
+    if (!projectIdFromInfo) return;
 
-if (projectInfo.value) {
-    var channel = pusher.subscribe("project" + projectInfo.value.id);
-    channel.bind("update", taskRefresh);
-}
-
-async function updateChannel() {
-    if (projectInfo.value) {
-        // TODO Change method
-        const result = $csrfFetch(`/api/projects/update/` + projectInfo.value.id, {
-            method: "POST",
-            body: {
-                orgId: projectInfo.value.organizationId,
-            }
-        });
-    }
-}
-
-// How much time to put on the timeline as padding before the start of the earliest task
-// and end of the latest task
-const PADDING_MS = 604800000;
-
-const bounds = computed<{ lower: number; upper: number }>(() => {
-    // 1 month behind, 1 month ahead as default view range
-    const defaultValues = {
-        lower: Date.now() - 2629800000,
-        upper: Date.now() + 2629800000,
-    };
-
-    if (!items.value || !items.value[0]) return defaultValues;
-
-    const lowest = items.value.reduce(
-        (lowest, item) => (item.start < lowest.start ? item : lowest),
-        items.value[0],
-    );
-    const highest = items.value.reduce(
-        (highest, item) => (item.start > highest.start ? item : highest),
-        items.value[0],
-    );
-
-    return {
-        lower: lowest.start - PADDING_MS,
-        upper: (highest.end ?? defaultValues.upper) + PADDING_MS,
-    };
-});
-
-const groupsInfo = reactive<TimelineTaskGroup[]>([]);
-tasksInfo?.value?.forEach((task) => {
-    let visible = true;
-    if (task.parentId !== null) visible = false;
-    groupsInfo.push({
-        id: `${task.id}-group`,
-        label: task.title,
-        visible: visible,
-        parentId: task.parentId,
+    subscribeToProject(projectIdFromInfo, (newTasks) => {
+        console.log('Received new tasks from pusher', newTasks);
+        tasksInfo.value = newTasks;
     });
+}, {
+    immediate: true,
 });
 
-const groups = computed<TimelineGroup[]>(() => {
-    if (!tasksInfo.value) return [];
+function refreshChannel() {
+    const projectIdFromInfo = projectInfo.value?.id;
+    if (!projectIdFromInfo) return;
 
-    //return tasksInfo.value
-    //.filter(task => task.parentId==null)
-    //.map((task): TimelineGroup => {
-    //    return {
-    //        id: `${task.id}-group`,
-    //        label: task.title,
-    //    };
-    //});
-    return groupsInfo
-        .filter(group => group.visible == true)
-        .map((group): TimelineTaskGroup => {
-            return {
-                id: group.id,
-                label: group.label,
-                visible: group.visible,
-                parentId: group.parentId,
-            };
-        });
+    updateChannel(projectIdFromInfo)
+}
+
+// Groups
+const groupsInfo = reactive<TimelineTaskGroup[]>([]);
+watch(tasksInfo, (newTasks) => {
+    if (!newTasks) return;
+
+    const incoming = newTasks.map<TimelineTaskGroup>((task) => {
+        const existing = groupsInfo.find((g) => g.id === `${task.id}-group`);
+
+        return {
+            id: `${task.id}-group`,
+            label: task.title,
+            expanded: existing?.expanded ?? true,
+            parentId: task.parentId,
+            cssVariables: { '--item-background': 'transparent' },
+
+            order: task.order,
+            depth: task.depth,
+            path: task.path,
+        };
+    })
+
+    // instead of re-assigning groupsInfo, we use this to simultaneously
+    // remove all items and add in new ones, causing the chart to catch the
+    // update and change accordingly
+    groupsInfo.splice(0, groupsInfo.length, ...incoming);
+}, {
+    immediate: true,
 });
 
-type TimelineTaskGroup = TimelineGroup & {
-    visible: boolean,
-    expanded?: boolean,
-    parentId: number | null,
-};
-
+// Selected task
 const selectedTask = ref<TimelineItemWithData | null>(null);
-type TimelineItemWithData = TimelineItem & {
-    data: ApiResponse<"/api/task/:projectId", "get">[number];
-};
 
-function taskSelect({
-    time,
-    event,
-    item,
-}: {
-    time: number;
-    event: MouseEvent;
-    item: TimelineMarker | TimelineItemWithData;
-}) {
-    // if (!item) selectedTask.value = null;
-    if (!item || event.type === "click" && item.type === "range") {
+function selectTask(item: TimelineItemWithData) {
+    if (item.type === "range") {
         selectedTask.value = item;
-        console.log(selectedTask);
     }
 }
 
@@ -215,13 +145,12 @@ async function addTask(subtaskId?: number) {
 
     const result = await $csrfFetch(`/api/tasks`, { method: "POST", body });
 
-    if (result.id) {
-        // TODO: fix this not refreshing
-        renderTask(startDate, endDate, taskName.value, result.id);
-    } else {
+    if (!result.id) {
         alert("Failed to add task");
+        return;
     }
-    updateChannel();
+
+    refreshChannel();
 }
 
 async function modifyTask() {
@@ -263,13 +192,12 @@ async function modifyTask() {
 
     const result = await $csrfFetch(`/api/tasks`, { method: "PUT", body });
 
-    if (result.id) {
-        // TODO: fix this not refreshing
-        renderTask(startDate, endDate, taskName.value, result.id);
-        updateChannel();
-    } else {
+    if (!result.id) {
         alert("Failed to modify task");
-    }
+        return;
+    } 
+    
+    refreshChannel();
 }
 
 async function deleteTask() {
@@ -282,71 +210,13 @@ async function deleteTask() {
 
     const result = await $csrfFetch(`/api/tasks`, { method: "DELETE", body });
 
-    if (result.id) {
-        taskRefresh();
-        updateChannel();
-        groupsInfo.splice(groupsInfo.findIndex((group)=> group.id === (taskId+"-group")), 1);
-    } else {
+    if (!result.id) {
         alert("Failed to delete task");
+        return;
     }
-}
 
-async function renderTask(
-    startTime: Date,
-    endTime: Date,
-    groupName: string,
-    taskId: number,
-) {
-    await taskRefresh();
-    console.log("Rendering Task: "+groupName);
-    const task = tasksInfo.value?.find(task=>task.id===taskId);
-    const group = groupsInfo.find(group=>group.id===(taskId+"-group"));
-    if(!task) {console.log("no Task"); return;}
-    if(!group || task.parentId) {
-        console.log("Adding Group");
-        groupsInfo.push({
-            id: taskId.toString()+"-group",
-            label: groupName,
-            visible: true,
-            parentId: task.parentId,
-        });
-    } else {
-        if(!group || !group.label) return;
-        group.id = taskId+"-group";
-        group.label = groupName;
-    }
-    console.log(groupsInfo);
-    if(task?.parentId) {
-        const parent = groupsInfo.find(group=>group.id===(task.parentId+"-group"));
-        console.log("renderSubTask in renderTask");
-        if(!parent?.expanded) {
-            const parentParent = groupsInfo.find(group=>group.id===parent?.id);
-            renderSubTask(parentParent?.label);
-        } else {
-            renderSubTask(parent.label);
-        }
-        
-    }
-    
+    refreshChannel();
 }
-
-function renderSubTask(taskTitle: string | undefined) {
-    if(!tasksInfo.value||taskTitle===undefined) return;
-    const task = tasksInfo.value.find(task => task.title===taskTitle);
-    const parentGroup = groupsInfo.find(group => group.id==(task?.id+"-group"));
-    if(!task || !task.id ) return;
-    console.log(groupsInfo);
-    let subTasks = groupsInfo.filter(group => group.parentId == task.id);
-    subTasks.forEach((group) => {
-        group.visible = !group.visible;
-        // group.label = "   "+group.label;
-        renderSubTask(group.label);
-    });
-    if(parentGroup?.expanded) {
-        parentGroup.expanded=!parentGroup.expanded;
-    }
-}
-
 </script>
 
 <template>
@@ -366,20 +236,18 @@ function renderSubTask(taskTitle: string | undefined) {
         </div>
     </div>
 
-    <div class="ring-md rounded-sm touch-none">
-        <div v-if="tasksPending">Loading timeline...</div>
-        <div v-else-if="tasksError">There was an error loading the timeline</div>
-        <Timeline v-else :items :groups :initial-viewport-start="bounds.lower" :initial-viewport-end="bounds.upper"
-            @click="taskSelect">
-            <template #group-label="{ group }">
-                <form @submit.prevent="renderSubTask(group.label)">
-                    <ButtonPrimary type="submit" v-if="!(group as TimelineTaskGroup).parentId">
-                        Drop
-                    </ButtonPrimary>
-                    {{ group.label }}
-                </form>
-            </template>
-        </Timeline>
+    <div class="ring-md touch-none">
+        <AppGanttFallback
+            v-if="tasksPending || tasksError">
+            {{ tasksPending 
+                ? 'Loading chart...' 
+                : 'There was an error loading the timeline. Please try again' }}
+        </AppGanttFallback>
+        <AppGantt 
+            v-else
+            :items
+            :groupsInfo
+            @selected-task="selectTask" />
     </div>
 
     <h2 class="mt-4">Add a new task:</h2>

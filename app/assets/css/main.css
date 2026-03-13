@@ -22,6 +22,12 @@
     --color-danger-bg-hover: var(--color-red-800);
 }
 
+:root {
+    /* vue-timeline-chart */
+    --group-border-top: 1px solid color-mix(in oklch, var(--color-txt-secondary) 15%, transparent);
+    --timestamps-background: var(--color-main-800);
+}
+
 body {
     @apply bg-main-900 text-txt-primary;
 }
