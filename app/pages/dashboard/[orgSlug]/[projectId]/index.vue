@@ -97,10 +97,11 @@ watch(tasksInfo, (newTasks) => {
 
 // Selected task
 const selectedTask = ref<TimelineItemWithData | null>(null);
-
+let taskSelected = ref<boolean>();
 function selectTask(item: TimelineItemWithData) {
     if (item.type === "range") {
         selectedTask.value = item;
+        taskSelected.value = true;
     }
 }
 
@@ -218,6 +219,7 @@ async function deleteTask(): Promise<{ error: boolean, message?: string }> {
     refreshChannel();
     return { error: false };
 }
+
 </script>
 
 <template>
@@ -271,9 +273,7 @@ async function deleteTask(): Promise<{ error: boolean, message?: string }> {
             </form>
         </template>
     </AppDialog>
-    <div v-if="selectedTask" class="mt-4">
-        <h2>{{ selectedTask.data.title }}</h2>
-        <p>{{ selectedTask.data.description }}</p>
+    <ProjectDrawer v-model:isOpen="taskSelected" :selected-task="selectedTask">
         <AppDialog title="Modify a task" description="Select a title, description, and date range.">
             <template #trigger>
                 <ButtonSecondary> Modify Task </ButtonSecondary>
@@ -285,7 +285,7 @@ async function deleteTask(): Promise<{ error: boolean, message?: string }> {
                     <AppFormInput v-model="taskDesc" label="Description" name="description"
                         :placeholder="selectedTask?.data?.description || 'We need to...'" />
                     <DatePicker date-picker-label="Timespan" v-model="dateValue" />
-                    <div class="flex justify-end mt-4">
+                    <div class="flex mt-4 max-w-48">
                         <ButtonPrimary type="submit"> Modify Task </ButtonPrimary>
                     </div>
                 </form>
@@ -302,14 +302,14 @@ async function deleteTask(): Promise<{ error: boolean, message?: string }> {
             </template>
         </AppActionButton>
 
-        <div v-if="(selectedTask.data.depth <= 3) || (selectedTask.data.depth === 0)">
+        <div>
             <h2 class="mt-4">Add a new task:</h2>
             <AppDialog title="Add a new sub-task" description="Select a title, description, and date range.">
                 <template #trigger>
                     <ButtonSecondary> New Sub-Task </ButtonSecondary>
                 </template>
                 <template #body>
-                    <form class="flex flex-col gap-2" @submit.prevent="addTask(selectedTask.data.id)">
+                    <form class="flex flex-col gap-2" @submit.prevent="addTask(selectedTask?.data.id)">
                         <AppFormInput v-model="taskName" label="Title" name="title" placeholder="My Task" />
                         <AppFormInput v-model="taskDesc" label="Description" name="description"
                             placeholder="We need to..." />
@@ -321,5 +321,5 @@ async function deleteTask(): Promise<{ error: boolean, message?: string }> {
                 </template>
             </AppDialog>
         </div>
-    </div>
+    </ProjectDrawer>
 </template>

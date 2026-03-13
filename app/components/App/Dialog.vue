@@ -16,7 +16,7 @@ const isOpen = defineModel('isOpen', { default: false });
 <template>
     <DialogRoot v-model:open="isOpen">
         <DialogTrigger :as-child="triggerAsChild">
-            <slot name="trigger" />
+            <slot name="trigger"></slot>
         </DialogTrigger>
         <DialogPortal>
             <Transition name="dialog-fade">
@@ -34,7 +34,7 @@ const isOpen = defineModel('isOpen', { default: false });
                     <DialogDescription class="text-sm text-txt-secondary leading-snug mb-4">
                         {{ description }}    
                     </DialogDescription>
-                    <slot name="body" />
+                    <slot name="body"></slot>
                     <DialogClose
                         class="absolute top-3 right-3"
                         aria-label="Close">
