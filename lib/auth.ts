@@ -21,6 +21,7 @@ export const auth = betterAuth({
             scope: [ 'user:email', 'repo' ]
         },
     },
+    trustedOrigins: [ env.BETTER_AUTH_URL ],
     user: {
         deleteUser: {
             enabled: true,
