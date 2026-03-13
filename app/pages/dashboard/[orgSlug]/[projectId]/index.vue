@@ -4,7 +4,6 @@ import {
     Timeline,
     type TimelineGroup,
     type TimelineItem,
-    type TimelineMarker,
 } from "vue-timeline-chart";
 import "vue-timeline-chart/style.css";
 
@@ -14,6 +13,19 @@ import {
     type DeleteTaskSchema,
 } from "~~/lib/db/schema";
 import type { ApiResponse } from "~/composables/apiResponse";
+
+type TimelineTaskGroup = TimelineGroup & {
+    expanded?: boolean,
+    parentId: number | null,
+
+    order: number | null,
+    depth: number,
+    path: number[],
+};
+
+type TimelineItemWithData = TimelineItem & {
+    data: ApiResponse<"/api/task/:projectId", "get">[number];
+};
 
 definePageMeta({
     sidebarType: "project",
@@ -34,7 +46,6 @@ const {
     data: tasksInfo,
     pending: tasksPending,
     error: tasksError,
-    refresh: taskRefresh,
 } = useFetch(() => `/api/task/${projectId.value}`, { method: "GET" });
 
 // maybe add controls later on
@@ -110,16 +121,19 @@ const groupsInfo = reactive<TimelineTaskGroup[]>([]);
 watch(tasksInfo, (newTasks) => {
     if (!newTasks) return;
 
-    const incoming = newTasks.map((task) => {
+    const incoming = newTasks.map<TimelineTaskGroup>((task) => {
         const existing = groupsInfo.find((g) => g.id === `${task.id}-group`);
 
         return {
             id: `${task.id}-group`,
             label: task.title,
-            // Only visible if was visible before or root task
-            visible: existing ? existing.visible : task.parentId === null, 
-            expanded: existing?.expanded ?? false,
+            expanded: existing?.expanded ?? true,
             parentId: task.parentId,
+            cssVariables: { '--item-background': 'transparent' },
+
+            order: task.order,
+            depth: task.depth,
+            path: task.path,
         };
     })
 
@@ -131,44 +145,17 @@ watch(tasksInfo, (newTasks) => {
     immediate: true,
 });
 
-const groups = computed<TimelineGroup[]>(() => {
+const groups = computed<TimelineTaskGroup[]>(() => {
     if (!tasksInfo.value) return [];
 
-    return groupsInfo
-        .filter(group => group.visible == true)
-        .map((group) => {
-            return {
-                id: group.id,
-                label: group.label,
-                visible: group.visible,
-                parentId: group.parentId,
-            };
-        });
+    return groupsInfo.filter(isVisible);
 });
 
-type TimelineTaskGroup = TimelineGroup & {
-    visible: boolean,
-    expanded?: boolean,
-    parentId: number | null,
-};
-
 const selectedTask = ref<TimelineItemWithData | null>(null);
-type TimelineItemWithData = TimelineItem & {
-    data: ApiResponse<"/api/task/:projectId", "get">[number];
-};
 
-function taskSelect({
-    event,
-    item,
-}: {
-    time: number;
-    event: MouseEvent;
-    item: TimelineMarker | TimelineItemWithData;
-}) {
-    // if (!item) selectedTask.value = null;
-    if (!item || event.type === "click" && item.type === "range") {
+function selectTask(item: TimelineItemWithData) {
+    if (item.type === "range") {
         selectedTask.value = item;
-        console.log(selectedTask);
     }
 }
 
@@ -286,23 +273,25 @@ async function deleteTask() {
     refreshChannel();
 }
 
-function renderSubTask(taskTitle: string | undefined) {
-    if(!tasksInfo.value||taskTitle===undefined) return;
-    const task = tasksInfo.value.find(task => task.title===taskTitle);
-    const parentGroup = groupsInfo.find(group => group.id==(task?.id+"-group"));
-    if(!task || !task.id ) return;
-    console.log(groupsInfo);
-    let subTasks = groupsInfo.filter(group => group.parentId == task.id);
-    subTasks.forEach((group) => {
-        group.visible = !group.visible;
-        // group.label = "   "+group.label;
-        renderSubTask(group.label);
+function isVisible(group: TimelineTaskGroup): boolean {
+    if (group.depth === 0) return true;
+
+    return group.path.slice(0, -1).every((ancestorId) => {
+        const ancestor = groupsInfo.find(g => g.id === `${ancestorId}-group`);
+        return ancestor?.expanded === true;
     });
-    if(parentGroup?.expanded) {
-        parentGroup.expanded=!parentGroup.expanded;
-    }
 }
 
+function toggleExpanded(groupId: string) {
+    const group = groupsInfo.find(g => g.id === groupId);
+    if (group) group.expanded = !group.expanded;
+}
+
+function hasChildren(groupId: string): boolean {
+    const taskId = Number(groupId.replace('-group', ''));
+    
+    return groupsInfo.some(g => g.parentId === taskId);
+}
 </script>
 
 <template>
@@ -325,15 +314,39 @@ function renderSubTask(taskTitle: string | undefined) {
     <div class="ring-md rounded-sm touch-none">
         <div v-if="tasksPending">Loading timeline...</div>
         <div v-else-if="tasksError">There was an error loading the timeline</div>
-        <Timeline v-else :items :groups :initial-viewport-start="bounds.lower" :initial-viewport-end="bounds.upper"
-            @click="taskSelect">
+        <Timeline 
+            v-else 
+            :items 
+            :groups 
+            :initial-viewport-start="bounds.lower" 
+            :initial-viewport-end="bounds.upper">
             <template #group-label="{ group }">
-                <form @submit.prevent="renderSubTask(group.label)">
-                    <ButtonPrimary type="submit" v-if="!(group as TimelineTaskGroup).parentId">
-                        Drop
-                    </ButtonPrimary>
-                    {{ group.label }}
-                </form>
+                <div 
+                    class="flex items-center gap-1"
+                    :class="{
+                        'ml-2': group.path.length > 1,
+                        'ml-4': group.path.length > 2
+                    }">
+                    <button 
+                        v-if="hasChildren(group.id)"
+                        @click="toggleExpanded(group.id)">
+                        <Icon 
+                            name="hugeicons:arrow-right-01"
+                            :class="{ 'rotate-90': group.expanded }" />
+                        {{ group.label }}
+                    </button>
+                    <span 
+                        v-else
+                        class="ml-4">
+                        {{ group.label }}
+                    </span>
+                </div>
+            </template>
+
+            <template #item="{ item }">
+                <div 
+                    class="size-full bg-brand ring-md rounded-sm"
+                    @click="selectTask(item)"></div>
             </template>
         </Timeline>
     </div>
